@@ -2,11 +2,40 @@ Module.register("MMM-CalendarDisplay", {
   defaults: {
     calendars: []
   },
+
   start() {
-    console.log("STARTED CALENDAR THINGY");
+    this.sendSocketNotification(
+      // TODO: Add support for colours, currently mapping to URL only
+      "GET_EVENTS",
+      this.config.calendars.map((cal) => cal.url)
+    );
 
-    this.sendSocketNotification("GET_EVENTS", this.config.calendars);
+    this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {
+      console.log(day);
+      return this.events[day];
+    });
+  },
 
-    console.log("Sent socket");
+  socketNotificationReceived(notification, payload) {
+    if (notification === "EVENTS") {
+      this.events = payload.returnObj;
+      this.days = payload.days;
+      this.updateDom();
+    }
+  },
+
+  getTemplate() {
+    return "CalendarDisplay.njk";
+  },
+
+  getStyles() {
+    return ["CalendarDisplay.css"];
+  },
+
+  getTemplateData() {
+    return {
+      events: this.events,
+      days: this.days
+    };
   }
 });

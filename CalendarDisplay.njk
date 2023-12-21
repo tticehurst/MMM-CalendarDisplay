@@ -1,0 +1,18 @@
+{# {{ events|dump }} #}
+
+<div id="cal-container">
+  {% for day in days %}
+    <div class="cal-slot">
+      <div class="cal-slot-header">
+        <span class="cal-slot-header-weekday">{{ day.weekday }}</span>
+        <span class="cal-slot-header-day">{{ day.day }}</span>
+      </div>
+
+      <div class="cal-slot-content">
+        <ul>
+          {% for evt in day.full|getEventsForDay %}<li>{{ evt.name }}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endfor %}
+</div>
