@@ -3,6 +3,25 @@ Module.register("MMM-CalendarDisplay", {
     calendars: []
   },
 
+  __getWeekendDates() {
+    const today = new Date();
+    let currentDay = today.getDay();
+    const daysToAdd = currentDay === 6 ? 0 : 6 - currentDay;
+
+    const nextSaturday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + daysToAdd
+    );
+    const nextSunday = new Date(
+      nextSaturday.getFullYear(),
+      nextSaturday.getMonth(),
+      nextSaturday.getDate() + 1
+    );
+
+    return [nextSaturday.toDateString(), nextSunday.toDateString()];
+  },
+
   start() {
     this.sendSocketNotification(
       // TODO: Add support for colours, currently mapping to URL only
@@ -11,15 +30,20 @@ Module.register("MMM-CalendarDisplay", {
     );
 
     this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {
-      console.log(day);
       return this.events[day];
     });
   },
 
   socketNotificationReceived(notification, payload) {
     if (notification === "EVENTS") {
+      let [saturday, sunday] = this.__getWeekendDates();
       this.events = payload.returnObj;
       this.days = payload.days;
+
+      this.today = new Date().toDateString();
+      this.saturday = saturday;
+      this.sunday = sunday;
+
       this.updateDom();
     }
   },
@@ -35,7 +59,10 @@ Module.register("MMM-CalendarDisplay", {
   getTemplateData() {
     return {
       events: this.events,
-      days: this.days
+      days: this.days,
+      today: this.today,
+      saturday: this.saturday,
+      sunday: this.sunday
     };
   }
 });

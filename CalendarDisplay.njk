@@ -1,16 +1,38 @@
 {# {{ events|dump }} #}
-
+{{ weekend }}
 <div id="cal-container">
   {% for day in days %}
     <div class="cal-slot">
-      <div class="cal-slot-header">
+      {% set headerID = "" %}
+
+      {% if day.full == today %}
+        {% set headerID = "today" %}
+      {% elif day.full ==saturday %}
+        {% set headerID = "saturday" %}
+      {% elif day.full ==sunday %}
+        {% set headerID = "sunday" %}
+      {% endif %}
+
+      <div class="cal-slot-header" id="{{ headerID }}">
         <span class="cal-slot-header-weekday">{{ day.weekday }}</span>
         <span class="cal-slot-header-day">{{ day.day }}</span>
       </div>
 
       <div class="cal-slot-content">
         <ul>
-          {% for evt in day.full|getEventsForDay %}<li>{{ evt.name }}</li>{% endfor %}
+          {% for evt in day.full|getEventsForDay %}
+            <li>
+              <div class="cal-slot-fa">
+                <i class="fa fa-"></i>
+              </div>
+              <div class="cal-slot-event">
+                {% if evt.dateStart.time != "0:0" %}
+                  <span class="cal-slot-event-time">{{ evt.dateStart.time }} - {{ evt.dateEnd.time }}</span>
+                {% endif %}
+                <span class="cal-slot-event-name">{{ evt.name }}</span>
+              </div>
+            </li>
+          {% endfor %}
         </ul>
       </div>
     </div>

@@ -16,11 +16,7 @@ module.exports = NodeHelper.create({
   },
 
   __getWeekDates() {
-    const currentDate = new Date();
-    const daysToMonday = (currentDate.getDay() + 6) % 7;
-    const startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - daysToMonday);
-
+    const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 6);
 
@@ -34,40 +30,42 @@ module.exports = NodeHelper.create({
     const iCalData = responses.map((response) => ICal.parseICS(response));
 
     const currentDate = new Date();
-    const daysUntilMonday = (currentDate.getDay() + 6) % 7;
     const startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - daysUntilMonday);
 
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 6);
 
-    const events = Object.keys(iCalData[0]);
-    const filteredEvents = events
-      .map((event) => iCalData[0][event])
-      .filter(
-        (eventData) =>
-          eventData.type === "VEVENT" &&
-          eventData.start >= startDate &&
-          eventData.end <= endDate
-      )
-      .map((eventData) => ({
-        name: eventData.summary,
-        dateStart: {
-          date: eventData.start.toDateString(),
-          time: eventData.start.toTimeString(),
-          epoch: eventData.start.getTime()
-        },
-        dateEnd: {
-          date: new Date(
-            eventData.end.setDate(eventData.end.getDate() - 1)
-          ).toDateString(),
-          time: eventData.end.toTimeString(),
-          epoch: eventData.end.getTime()
-        },
-        location: eventData.location
-      }));
+    const allFilteredEvents = [];
 
-    return filteredEvents;
+    iCalData.forEach((data) => {
+      const events = Object.keys(data);
+      const filteredEvents = events
+        .map((event) => data[event])
+        .filter(
+          (eventData) =>
+            eventData.type === "VEVENT" &&
+            eventData.end >= startDate &&
+            eventData.start <= endDate
+        )
+        .map((eventData) => ({
+          name: eventData.summary,
+          dateStart: {
+            date: eventData.start.toDateString(),
+            time: `${eventData.start.getHours()}:${eventData.start.getMinutes()}`,
+            epoch: eventData.start.getTime()
+          },
+          dateEnd: {
+            date: eventData.end.toDateString(),
+            time: `${eventData.end.getHours()}:${eventData.end.getMinutes()}`,
+            epoch: eventData.end.getTime()
+          },
+          location: eventData.location
+        }));
+
+      allFilteredEvents.push(...filteredEvents);
+    });
+
+    return allFilteredEvents;
   },
 
   async FormatEvents(calendars) {
@@ -97,10 +95,6 @@ module.exports = NodeHelper.create({
 
       if (fullDays.includes(event.dateStart.date)) {
         if (event.dateEnd.epoch > event.dateStart.epoch) {
-          console.log(
-            `Event '${event.name}' is multi-day | Start date: ${event.dateStart.date} End date: ${event.dateEnd.date}`
-          );
-
           let between = this.__getDatesBetween(
             new Date(event.dateStart.date),
             new Date(event.dateEnd.date)
@@ -112,10 +106,6 @@ module.exports = NodeHelper.create({
             }
           });
         } else {
-          console.log(
-            `Event '${event.name}' is single day | Start date: ${event.dateStart.date}`
-          );
-
           if (returnObj[event.dateStart.date]) {
             returnObj[event.dateStart.date].push(event);
           }
@@ -129,7 +119,6 @@ module.exports = NodeHelper.create({
   async socketNotificationReceived(notification, urls) {
     if (notification === "GET_EVENTS") {
       let { returnObj, days } = await this.FormatEvents(urls);
-      console.log(returnObj, days);
 
       this.sendSocketNotification("EVENTS", { returnObj, days });
     }
