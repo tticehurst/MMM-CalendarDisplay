@@ -15,25 +15,19 @@ module.exports = NodeHelper.create({
     return datesArray;
   },
 
-  __getWeekDates() {
+  __getWeekDates(daysToFetch) {
     const startDate = new Date();
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
+    endDate.setDate(startDate.getDate() + (daysToFetch - 1));
 
     return [startDate, endDate];
   },
 
-  async __GetWeeksEvents(calendars) {
+  async __GetWeeksEvents(calendars, startDate, endDate) {
     const get = bent("string");
 
     const responses = await Promise.all(calendars.map((url) => get(url)));
     const iCalData = responses.map((response) => ICal.parseICS(response));
-
-    const currentDate = new Date();
-    const startDate = new Date(currentDate);
-
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
 
     const allFilteredEvents = [];
 
@@ -47,20 +41,25 @@ module.exports = NodeHelper.create({
             eventData.end >= startDate &&
             eventData.start <= endDate
         )
-        .map((eventData) => ({
-          name: eventData.summary,
-          dateStart: {
-            date: eventData.start.toDateString(),
-            time: `${eventData.start.getHours()}:${eventData.start.getMinutes()}`,
-            epoch: eventData.start.getTime()
-          },
-          dateEnd: {
-            date: eventData.end.toDateString(),
-            time: `${eventData.end.getHours()}:${eventData.end.getMinutes()}`,
-            epoch: eventData.end.getTime()
-          },
-          location: eventData.location
-        }));
+        .map((eventData) => {
+          const adjustedEndDate = new Date(eventData.end);
+          adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+
+          return {
+            name: eventData.summary,
+            dateStart: {
+              date: eventData.start.toDateString(),
+              time: `${eventData.start.getHours()}:${eventData.start.getMinutes()}`,
+              epoch: eventData.start.getTime()
+            },
+            dateEnd: {
+              date: adjustedEndDate.toDateString(),
+              time: `${adjustedEndDate.getHours()}:${adjustedEndDate.getMinutes()}`,
+              epoch: adjustedEndDate.getTime()
+            },
+            location: eventData.location
+          };
+        });
 
       allFilteredEvents.push(...filteredEvents);
     });
@@ -68,11 +67,10 @@ module.exports = NodeHelper.create({
     return allFilteredEvents;
   },
 
-  async FormatEvents(calendars) {
-    const events = await this.__GetWeeksEvents(calendars);
+  async FormatEvents(calendars, startDate, endDate) {
+    const events = await this.__GetWeeksEvents(calendars, startDate, endDate);
 
-    let [weekStart, weekEnd] = this.__getWeekDates();
-    let days = this.__getDatesBetween(weekStart, weekEnd).map((date) => {
+    let days = this.__getDatesBetween(startDate, endDate).map((date) => {
       let [weekday, day] = date
         .toLocaleDateString("en-US", { weekday: "short", day: "numeric" })
         .split(" ");
@@ -116,9 +114,15 @@ module.exports = NodeHelper.create({
     return { returnObj, days };
   },
 
-  async socketNotificationReceived(notification, urls) {
+  async socketNotificationReceived(notification, config) {
     if (notification === "GET_EVENTS") {
-      let { returnObj, days } = await this.FormatEvents(urls);
+      let [startDate, endDate] = this.__getWeekDates(config.daysToFetch);
+
+      let { returnObj, days } = await this.FormatEvents(
+        config.calendars,
+        startDate,
+        endDate
+      );
 
       this.sendSocketNotification("EVENTS", { returnObj, days });
     }

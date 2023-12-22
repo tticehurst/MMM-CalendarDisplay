@@ -1,6 +1,7 @@
 Module.register("MMM-CalendarDisplay", {
   defaults: {
-    calendars: []
+    calendars: [],
+    daysToFetch: 7
   },
 
   __getWeekendDates() {
@@ -26,7 +27,10 @@ Module.register("MMM-CalendarDisplay", {
     this.sendSocketNotification(
       // TODO: Add support for colours, currently mapping to URL only
       "GET_EVENTS",
-      this.config.calendars.map((cal) => cal.url)
+      {
+        calendars: this.config.calendars.map((cal) => cal.url),
+        daysToFetch: this.config.daysToFetch
+      }
     );
 
     this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {

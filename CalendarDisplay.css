@@ -81,7 +81,6 @@ div.cal-slot-content > ul {
 
 div.cal-slot-content > ul li {
   text-align: left;
-  background-color: #3c3;
   font-size: 90%;
   margin: 0;
   padding: 0;
@@ -129,4 +128,16 @@ span.cal-slot-event-name {
   order: 2;
   width: 100%;
   text-align: left;
+}
+
+div.cal-slot-content > ul li.green {
+  background-color: #3c3;
+}
+
+div.cal-slot-content > ul li.pink {
+  background-color: rgb(194, 91, 162);
+}
+
+div.cal-slot-content > ul li.black {
+  background-color: #545454;
 }
