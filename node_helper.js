@@ -1,9 +1,11 @@
 const NodeHelper = require("node_helper");
 const bent = require("bent");
 const ICal = require("node-ical");
+const { rrulestr, RRuleSet } = require("rrule");
+const rruleCache = {};
 
 module.exports = NodeHelper.create({
-  __getDatesBetween(startDate, endDate) {
+  __GetDatesBetween(startDate, endDate) {
     const datesArray = [];
     let currentDate = new Date(startDate);
 
@@ -15,7 +17,7 @@ module.exports = NodeHelper.create({
     return datesArray;
   },
 
-  __getWeekDates(daysToFetch) {
+  __GetWeekDates(daysToFetch) {
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + (daysToFetch - 1));
@@ -23,54 +25,79 @@ module.exports = NodeHelper.create({
     return [startDate, endDate];
   },
 
+  __MapEventData(eventData) {
+    const adjustedEndDate = new Date(eventData.end);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+
+    return {
+      name: eventData.summary,
+      dateStart: {
+        date: eventData.start.toDateString(),
+        time: `${eventData.start.getHours()}:${eventData.start.getMinutes()}`,
+        epoch: eventData.start.getTime()
+      },
+      dateEnd: {
+        date: adjustedEndDate.toDateString(),
+        time: `${adjustedEndDate.getHours()}:${adjustedEndDate.getMinutes()}`,
+        epoch: adjustedEndDate.getTime()
+      },
+      location: eventData.location
+    };
+  },
+
   async __GetWeeksEvents(calendars, startDate, endDate) {
     const get = bent("string");
+    const allFilteredEvents = [];
+    const firstOfMonth = new Date().setDate(1);
 
     const responses = await Promise.all(calendars.map((url) => get(url)));
     const iCalData = responses.map((response) => ICal.parseICS(response));
 
-    const allFilteredEvents = [];
-
-    iCalData.forEach((data) => {
-      const events = Object.keys(data);
-      const filteredEvents = events
+    for (const data of iCalData) {
+      const events = Object.keys(data)
         .map((event) => data[event])
+        .filter((eventData) => eventData.type === "VEVENT");
+
+      const filteredEvents = events
         .filter(
           (eventData) =>
-            eventData.type === "VEVENT" &&
-            eventData.end >= startDate &&
-            eventData.start <= endDate
+            eventData.end >= startDate && eventData.start <= endDate
         )
-        .map((eventData) => {
-          const adjustedEndDate = new Date(eventData.end);
-          adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+        .map(this.__MapEventData);
 
-          return {
-            name: eventData.summary,
-            dateStart: {
-              date: eventData.start.toDateString(),
-              time: `${eventData.start.getHours()}:${eventData.start.getMinutes()}`,
-              epoch: eventData.start.getTime()
-            },
-            dateEnd: {
-              date: adjustedEndDate.toDateString(),
-              time: `${adjustedEndDate.getHours()}:${adjustedEndDate.getMinutes()}`,
-              epoch: adjustedEndDate.getTime()
-            },
-            location: eventData.location
-          };
-        });
+      const recurringEvents = events
+        .filter(
+          (eventData) => eventData.rrule && eventData.start >= firstOfMonth
+        )
+        .flatMap((eventData) => {
+          const rrule = rrulestr(eventData.rrule.toString());
 
-      allFilteredEvents.push(...filteredEvents);
-    });
+          const dates =
+            rruleCache[rrule] ||
+            rrule.between(startDate, endDate, false, (e) => {
+              return e.getTime();
+            });
 
+          if (!rruleCache[rrule]) rruleCache[rrule] = dates;
+
+          if (dates.length === 0) return null;
+          return dates.map((date) => {
+            return this.__MapEventData({ ...eventData, start: date });
+          });
+        })
+        .filter(Boolean);
+
+      allFilteredEvents.push(...filteredEvents, ...recurringEvents);
+    }
+
+    console.log("All events fetched");
     return allFilteredEvents;
   },
 
   async FormatEvents(calendars, startDate, endDate) {
     const events = await this.__GetWeeksEvents(calendars, startDate, endDate);
 
-    let days = this.__getDatesBetween(startDate, endDate).map((date) => {
+    let days = this.__GetDatesBetween(startDate, endDate).map((date) => {
       let [weekday, day] = date
         .toLocaleDateString("en-US", { weekday: "short", day: "numeric" })
         .split(" ");
@@ -91,9 +118,12 @@ module.exports = NodeHelper.create({
     events.forEach((event) => {
       let fullDays = days.map((day) => day.full);
 
-      if (fullDays.includes(event.dateStart.date)) {
+      if (
+        fullDays.includes(event.dateStart.date) ||
+        fullDays.includes(event.dateEnd.date)
+      ) {
         if (event.dateEnd.epoch > event.dateStart.epoch) {
-          let between = this.__getDatesBetween(
+          let between = this.__GetDatesBetween(
             new Date(event.dateStart.date),
             new Date(event.dateEnd.date)
           ).map((date) => date.toDateString());
@@ -116,7 +146,10 @@ module.exports = NodeHelper.create({
 
   async socketNotificationReceived(notification, config) {
     if (notification === "GET_EVENTS") {
-      let [startDate, endDate] = this.__getWeekDates(config.daysToFetch);
+      if (config.daysToFetch === 0) return;
+      if (config.daysToFetch > 30) config.daysToFetch = 30;
+
+      let [startDate, endDate] = this.__GetWeekDates(config.daysToFetch);
 
       let { returnObj, days } = await this.FormatEvents(
         config.calendars,
