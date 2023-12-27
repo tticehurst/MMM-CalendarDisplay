@@ -11,17 +11,25 @@
         {% set headerID = "saturday" %}
       {% elif day.full ==sunday %}
         {% set headerID = "sunday" %}
+      {%elif day.day == 1%}
+        {% set headerID = "newMonth" %}
       {% endif %}
 
       <div class="cal-slot-header" id="{{ headerID }}">
+        <span class="cal-slot-header-day">
+          {% if day.day == 1 %}
+            {{day.month}} {{day.day}}
+          {%else%}
+            {{ day.day }}
+          {%endif%}
+        </span>
         <span class="cal-slot-header-weekday">{{ day.weekday }}</span>
-        <span class="cal-slot-header-day">{{ day.day }}</span>
       </div>
 
       <div class="cal-slot-content">
         <ul>
           {% for evt in day.full|getEventsForDay %}
-            <li class="green">
+            <li class="{{evt.styles}}">
               <div class="cal-slot-fa">
                 <i class="fa fa-"></i>
               </div>

@@ -28,7 +28,7 @@ Module.register("MMM-CalendarDisplay", {
       // TODO: Add support for colours, currently mapping to URL only
       "GET_EVENTS",
       {
-        calendars: this.config.calendars.map((cal) => cal.url),
+        calendars: this.config.calendars,
         daysToFetch: this.config.daysToFetch
       }
     );

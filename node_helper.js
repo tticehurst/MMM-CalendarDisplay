@@ -1,7 +1,7 @@
 const NodeHelper = require("node_helper");
 const bent = require("bent");
 const ICal = require("node-ical");
-const { rrulestr, RRuleSet } = require("rrule");
+const { rrulestr } = require("rrule");
 const rruleCache = {};
 
 module.exports = NodeHelper.create({
@@ -22,6 +22,9 @@ module.exports = NodeHelper.create({
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + (daysToFetch - 1));
 
+    endDate.setHours(23, 59, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+
     return [startDate, endDate];
   },
 
@@ -41,21 +44,30 @@ module.exports = NodeHelper.create({
         time: `${adjustedEndDate.getHours()}:${adjustedEndDate.getMinutes()}`,
         epoch: adjustedEndDate.getTime()
       },
-      location: eventData.location
+      location: eventData.location,
+      styles: eventData.styles
     };
   },
 
   async __GetWeeksEvents(calendars, startDate, endDate) {
     const get = bent("string");
     const allFilteredEvents = [];
-    const firstOfMonth = new Date().setDate(1);
 
-    const responses = await Promise.all(calendars.map((url) => get(url)));
+    const responses = await Promise.all(calendars.map((c) => get(c.url)));
     const iCalData = responses.map((response) => ICal.parseICS(response));
+
+    const styles = calendars.map((c) => c.styles);
+
+    iCalData.forEach((data, index) => {
+      data["styles"] = styles[index] || "";
+    });
 
     for (const data of iCalData) {
       const events = Object.keys(data)
         .map((event) => data[event])
+        .map((eventData) => {
+          return { ...eventData, styles: data.styles };
+        })
         .filter((eventData) => eventData.type === "VEVENT");
 
       const filteredEvents = events
@@ -66,16 +78,15 @@ module.exports = NodeHelper.create({
         .map(this.__MapEventData);
 
       const recurringEvents = events
-        .filter(
-          (eventData) => eventData.rrule && eventData.start >= firstOfMonth
-        )
+        .filter((eventData) => eventData.rrule)
         .flatMap((eventData) => {
           const rrule = rrulestr(eventData.rrule.toString());
 
           const dates =
             rruleCache[rrule] ||
-            rrule.between(startDate, endDate, false, (e) => {
-              return e.getTime();
+            rrule.between(startDate, endDate, true, (d, l) => {
+              console.log(d.getTime(), l, eventData.summary);
+              return false;
             });
 
           if (!rruleCache[rrule]) rruleCache[rrule] = dates;
@@ -98,13 +109,19 @@ module.exports = NodeHelper.create({
     const events = await this.__GetWeeksEvents(calendars, startDate, endDate);
 
     let days = this.__GetDatesBetween(startDate, endDate).map((date) => {
-      let [weekday, day] = date
-        .toLocaleDateString("en-US", { weekday: "short", day: "numeric" })
+      let [weekday, month, day] = date
+        .toLocaleDateString("en-US", {
+          weekday: "short",
+          day: "numeric",
+          month: "short"
+        })
+        .replace(",", "")
         .split(" ");
 
       return {
         weekday,
         day,
+        month,
         full: new Date(date.setHours(0, 0, 0, 0)).toDateString()
       };
     });
