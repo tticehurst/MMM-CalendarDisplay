@@ -70,13 +70,6 @@ module.exports = NodeHelper.create({
         })
         .filter((eventData) => eventData.type === "VEVENT");
 
-      const filteredEvents = events
-        .filter(
-          (eventData) =>
-            eventData.end >= startDate && eventData.start <= endDate
-        )
-        .map(this.__MapEventData);
-
       const recurringEvents = events
         .filter((eventData) => eventData.rrule)
         .flatMap((eventData) => {
@@ -84,19 +77,36 @@ module.exports = NodeHelper.create({
 
           const dates =
             rruleCache[rrule] ||
-            rrule.between(startDate, endDate, true, (d, l) => {
-              console.log(d.getTime(), l, eventData.summary);
-              return false;
+            rrule.between(startDate, endDate, false, (date) => {
+              return date >= startDate && date <= endDate;
             });
 
           if (!rruleCache[rrule]) rruleCache[rrule] = dates;
 
           if (dates.length === 0) return null;
-          return dates.map((date) => {
+          let a = dates.map((date) => {
             return this.__MapEventData({ ...eventData, start: date });
           });
+
+          return a;
         })
         .filter(Boolean);
+
+      const filteredEvents = events
+        .filter(
+          (eventData) =>
+            eventData.end >= startDate && eventData.start <= endDate
+        )
+        .map(this.__MapEventData)
+        .filter((filteredEvent) => {
+          return !recurringEvents.some((recurringEvent) => {
+            return (
+              filteredEvent.name === recurringEvent.name &&
+              filteredEvent.dateStart.date === recurringEvent.dateStart.date &&
+              filteredEvent.dateEnd.date === recurringEvent.dateEnd.date
+            );
+          });
+        });
 
       allFilteredEvents.push(...filteredEvents, ...recurringEvents);
     }
