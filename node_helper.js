@@ -32,16 +32,29 @@ module.exports = NodeHelper.create({
     const adjustedEndDate = new Date(eventData.end);
     adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
 
+    console.log(eventData);
     return {
       name: eventData.summary,
       dateStart: {
         date: eventData.start.toDateString(),
-        time: `${eventData.start.getHours()}:${eventData.start.getMinutes()}`,
+        time: `${eventData.start
+          .getHours()
+          .toString()
+          .padEnd(2, "0")}:${eventData.start
+          .getMinutes()
+          .toString()
+          .padEnd(2, "0")}`,
         epoch: eventData.start.getTime()
       },
       dateEnd: {
         date: adjustedEndDate.toDateString(),
-        time: `${adjustedEndDate.getHours()}:${adjustedEndDate.getMinutes()}`,
+        time: `${adjustedEndDate
+          .getHours()
+          .toString()
+          .padEnd(2, "0")}:${adjustedEndDate
+          .getMinutes()
+          .toString()
+          .padEnd(2, "0")}`,
         epoch: adjustedEndDate.getTime()
       },
       location: eventData.location,
