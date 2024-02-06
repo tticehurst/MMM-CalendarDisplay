@@ -37,11 +37,18 @@ div.cal-slot-header#today {
 }
 
 div.cal-slot-header#saturday {
-  background-color: blue;
+  background-color: rgba(51, 51, 153, 0.5);
+}
+div.cal-slot-header#sunday {
+  background-color: rgba(153, 51, 51, 0.5);
 }
 
-div.cal-slot-header#sunday {
-  background-color: maroon;
+div.cal-slot-header#saturday span.cal-slot-header-weekday {
+  color: #99f;
+}
+
+div.cal-slot-header#sunday span.cal-slot-header-weekday {
+  color: #f99;
 }
 
 span.cal-slot-header-day,
