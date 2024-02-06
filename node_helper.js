@@ -28,33 +28,31 @@ module.exports = NodeHelper.create({
     return [startDate, endDate];
   },
 
+  __FormatDate24HourTime(epochTimestamp) {
+    return new Date(epochTimestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+  },
+
   __MapEventData(eventData) {
     const adjustedEndDate = new Date(eventData.end);
     adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
 
-    console.log(eventData);
+    const startTime = __FormatDate24HourTime(eventData.start.getTime());
+    const endTime = __FormatDate24HourTime(eventData.end.getTime());
+
     return {
       name: eventData.summary,
       dateStart: {
         date: eventData.start.toDateString(),
-        time: `${eventData.start
-          .getHours()
-          .toString()
-          .padEnd(2, "0")}:${eventData.start
-          .getMinutes()
-          .toString()
-          .padEnd(2, "0")}`,
+        time: startTime,
         epoch: eventData.start.getTime()
       },
       dateEnd: {
         date: adjustedEndDate.toDateString(),
-        time: `${adjustedEndDate
-          .getHours()
-          .toString()
-          .padEnd(2, "0")}:${adjustedEndDate
-          .getMinutes()
-          .toString()
-          .padEnd(2, "0")}`,
+        time: endTime,
         epoch: adjustedEndDate.getTime()
       },
       location: eventData.location,
