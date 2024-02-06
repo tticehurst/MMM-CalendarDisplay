@@ -94,7 +94,12 @@ module.exports = NodeHelper.create({
       const recurringEvents = events
         .filter((eventData) => eventData.rrule)
         .flatMap((eventData) => {
-          const rrule = rrulestr(eventData.rrule.toString());
+          let rruleString = eventData.rrule.toString();
+          let match = Array.from(rruleString.matchAll(/;(.*):/g), (m) => m[0]);
+
+          if (match.length > 0) rruleString = rruleString.replace(match, ":");
+
+          const rrule = rrulestr(rruleString);
 
           const dates =
             rruleCache[rrule] ||
@@ -105,11 +110,10 @@ module.exports = NodeHelper.create({
           if (!rruleCache[rrule]) rruleCache[rrule] = dates;
 
           if (dates.length === 0) return null;
-          let a = dates.map((date) => {
+
+          return dates.map((date) => {
             return this.__MapEventData({ ...eventData, start: date });
           });
-
-          return a;
         })
         .filter(Boolean);
 
@@ -130,9 +134,13 @@ module.exports = NodeHelper.create({
         });
 
       allFilteredEvents.push(...filteredEvents, ...recurringEvents);
+      // console.log(recurringEvents);
     }
 
     console.log("All events fetched");
+    allFilteredEvents.sort(
+      (a, b) => a.name.charCodeAt(0) - b.name.charCodeAt(0)
+    );
     return allFilteredEvents;
   },
 

@@ -156,6 +156,7 @@ span.cal-slot-event-location {
   margin: 0;
   padding: 0;
   color: #d0d0d0;
+  padding-left: 5px;
 }
 
 span.cal-slot-event-name {
