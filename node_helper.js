@@ -138,10 +138,16 @@ module.exports = NodeHelper.create({
     }
 
     console.log("All events fetched");
-    allFilteredEvents.sort(
-      (a, b) => a.name.charCodeAt(0) - b.name.charCodeAt(0)
-    );
-    return allFilteredEvents;
+    // allFilteredEvents.sort(
+    //   (a, b) => a.name.charCodeAt(0) - b.name.charCodeAt(0)
+    // );
+    return allFilteredEvents.filter((e) => {
+      return (
+        e.name !== undefined &&
+        e.dateStart !== undefined &&
+        e.dateEnd !== undefined
+      );
+    });
   },
 
   async FormatEvents(calendars, startDate, endDate) {
@@ -172,6 +178,7 @@ module.exports = NodeHelper.create({
     });
 
     events.forEach((event) => {
+      console.log(event);
       let fullDays = days.map((day) => day.full);
 
       if (
