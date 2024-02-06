@@ -132,8 +132,6 @@ module.exports = NodeHelper.create({
       allFilteredEvents.push(...filteredEvents, ...recurringEvents);
     }
 
-    console.log(allFilteredEvents.filter((e) => e.name === "te"));
-
     console.log("All events fetched");
     return allFilteredEvents;
   },
