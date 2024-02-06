@@ -27,8 +27,11 @@
       <div class="cal-slot-content">
         <ul>
           {% for evt in day.full|getEventsForDay %}
+
             {% if evt.dateStart.time == "24:00" and evt.dateEnd.time == "24:00" %}
               {% set allDay = true %}
+            {% else %}
+              {% set allDay = false %}
             {% endif %}
 
             <li class="{{ evt.styles }}">

@@ -1,7 +1,8 @@
 Module.register("MMM-CalendarDisplay", {
   defaults: {
     calendars: [],
-    daysToFetch: 7
+    daysToFetch: 7,
+    refreshTime: 600000
   },
 
   __getWeekendDates() {
@@ -24,18 +25,21 @@ Module.register("MMM-CalendarDisplay", {
   },
 
   start() {
-    this.sendSocketNotification(
-      // TODO: Add support for colours, currently mapping to URL only
-      "GET_EVENTS",
-      {
-        calendars: this.config.calendars,
-        daysToFetch: this.config.daysToFetch
-      }
-    );
+    this.sendSocketNotification("GET_EVENTS", {
+      calendars: this.config.calendars,
+      daysToFetch: this.config.daysToFetch
+    });
 
     this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {
       return this.events[day];
     });
+
+    setInterval(() => {
+      this.sendSocketNotification("GET_EVENTS", {
+        calendars: this.config.calendars,
+        daysToFetch: this.config.daysToFetch
+      });
+    }, this.config.refreshTime);
   },
 
   socketNotificationReceived(notification, payload) {
@@ -48,7 +52,7 @@ Module.register("MMM-CalendarDisplay", {
       this.saturday = saturday;
       this.sunday = sunday;
 
-      this.updateDom();
+      this.updateDom(300);
     }
   },
 

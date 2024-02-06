@@ -4,6 +4,14 @@ const ICal = require("node-ical");
 const { rrulestr } = require("rrule");
 const rruleCache = {};
 
+function __FormatDate24HourTime(epochTimestamp) {
+  return new Date(epochTimestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
 module.exports = NodeHelper.create({
   __GetDatesBetween(startDate, endDate) {
     const datesArray = [];
@@ -28,20 +36,26 @@ module.exports = NodeHelper.create({
     return [startDate, endDate];
   },
 
-  __FormatDate24HourTime(epochTimestamp) {
-    return new Date(epochTimestamp).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    });
-  },
-
   __MapEventData(eventData) {
     const adjustedEndDate = new Date(eventData.end);
     adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
 
     const startTime = __FormatDate24HourTime(eventData.start.getTime());
     const endTime = __FormatDate24HourTime(eventData.end.getTime());
+
+    const dateEnd = {
+      date: 0,
+      time: endTime,
+      epoch: 0
+    };
+
+    if (eventData.start.toDateString() === eventData.end.toDateString()) {
+      dateEnd.date = eventData.end.toDateString();
+      dateEnd.epoch = eventData.end.getTime();
+    } else {
+      dateEnd.date = adjustedEndDate.toDateString();
+      dateEnd.epoch = adjustedEndDate.getTime();
+    }
 
     return {
       name: eventData.summary,
@@ -50,11 +64,7 @@ module.exports = NodeHelper.create({
         time: startTime,
         epoch: eventData.start.getTime()
       },
-      dateEnd: {
-        date: adjustedEndDate.toDateString(),
-        time: endTime,
-        epoch: adjustedEndDate.getTime()
-      },
+      dateEnd,
       location: eventData.location,
       styles: eventData.styles
     };
@@ -121,6 +131,8 @@ module.exports = NodeHelper.create({
 
       allFilteredEvents.push(...filteredEvents, ...recurringEvents);
     }
+
+    console.log(allFilteredEvents.filter((e) => e.name === "te"));
 
     console.log("All events fetched");
     return allFilteredEvents;
