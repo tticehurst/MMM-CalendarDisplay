@@ -209,9 +209,17 @@ module.exports = NodeHelper.create({
   async socketNotificationReceived(notification, config) {
     if (notification === "GET_EVENTS") {
       if (config.daysToDisplay === 0) return;
-      if (config.daysToDisplay > 30) config.daysToDisplay = 30;
 
-      let [startDate, endDate] = this.__GetWeekDates(30);
+      let now = new Date();
+      let maxDays = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0
+      ).getDate();
+
+      if (config.daysToDisplay > maxDays) config.daysToDisplay = maxDays;
+
+      let [startDate, endDate] = this.__GetWeekDates(maxDays);
 
       let { returnObj, days } = await this.FormatEvents(
         config.calendars,
