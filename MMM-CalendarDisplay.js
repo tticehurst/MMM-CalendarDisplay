@@ -1,7 +1,7 @@
 Module.register("MMM-CalendarDisplay", {
   defaults: {
     calendars: [],
-    daysToFetch: 7,
+    daysToDisplay: 7,
     refreshTime: 600000
   },
 
@@ -27,7 +27,7 @@ Module.register("MMM-CalendarDisplay", {
   start() {
     this.sendSocketNotification("GET_EVENTS", {
       calendars: this.config.calendars,
-      daysToFetch: this.config.daysToFetch
+      daysToDisplay: this.config.daysToDisplay
     });
 
     this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {
@@ -37,7 +37,7 @@ Module.register("MMM-CalendarDisplay", {
     setInterval(() => {
       this.sendSocketNotification("GET_EVENTS", {
         calendars: this.config.calendars,
-        daysToFetch: this.config.daysToFetch
+        daysToDisplay: this.config.daysToDisplay
       });
     }, this.config.refreshTime);
   },
@@ -51,6 +51,14 @@ Module.register("MMM-CalendarDisplay", {
       this.today = new Date().toDateString();
       this.saturday = saturday;
       this.sunday = sunday;
+
+      let calDisplayData = {};
+
+      Object.keys(payload.returnObj).forEach((day) => {
+        calDisplayData[new Date(day).getTime()] = payload.returnObj[day].length;
+      });
+
+      this.sendNotification("CAL-DISPLAY-EVENTS", calDisplayData);
 
       this.updateDom(300);
     }
@@ -70,7 +78,8 @@ Module.register("MMM-CalendarDisplay", {
       days: this.days,
       today: this.today,
       saturday: this.saturday,
-      sunday: this.sunday
+      sunday: this.sunday,
+      toDisplay: this.config.daysToDisplay
     };
   }
 });

@@ -25,10 +25,10 @@ module.exports = NodeHelper.create({
     return datesArray;
   },
 
-  __GetWeekDates(daysToFetch) {
+  __GetWeekDates(daysToDisplay) {
     const startDate = new Date();
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + (daysToFetch - 1));
+    endDate.setDate(startDate.getDate() + (daysToDisplay - 1));
 
     endDate.setHours(23, 59, 0, 0);
     startDate.setHours(0, 0, 0, 0);
@@ -178,7 +178,6 @@ module.exports = NodeHelper.create({
     });
 
     events.forEach((event) => {
-      console.log(event);
       let fullDays = days.map((day) => day.full);
 
       if (
@@ -209,10 +208,10 @@ module.exports = NodeHelper.create({
 
   async socketNotificationReceived(notification, config) {
     if (notification === "GET_EVENTS") {
-      if (config.daysToFetch === 0) return;
-      if (config.daysToFetch > 30) config.daysToFetch = 30;
+      if (config.daysToDisplay === 0) return;
+      if (config.daysToDisplay > 30) config.daysToDisplay = 30;
 
-      let [startDate, endDate] = this.__GetWeekDates(config.daysToFetch);
+      let [startDate, endDate] = this.__GetWeekDates(30);
 
       let { returnObj, days } = await this.FormatEvents(
         config.calendars,
