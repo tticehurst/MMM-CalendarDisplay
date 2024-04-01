@@ -52,13 +52,17 @@ Module.register("MMM-CalendarDisplay", {
       this.saturday = saturday;
       this.sunday = sunday;
 
-      let calDisplayData = {};
+      let calDisplayData = [];
 
       Object.keys(payload.returnObj).forEach((day) => {
-        calDisplayData[new Date(day).getTime()] = payload.returnObj[day].length;
+        // calDisplayData[new Date(day).getTime()] = payload.returnObj[day].length;
+        calDisplayData.push({ day, events: payload.returnObj[day].length });
       });
 
-      this.sendNotification("CAL-DISPLAY-EVENTS", calDisplayData);
+      this.sendNotification("CAL-DISPLAY-EVENTS", {
+        data: calDisplayData,
+        today: this.today
+      });
 
       this.updateDom(300);
     }
