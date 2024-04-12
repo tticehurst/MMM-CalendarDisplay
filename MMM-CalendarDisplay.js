@@ -24,6 +24,25 @@ Module.register("MMM-CalendarDisplay", {
     return [nextSaturday.toDateString(), nextSunday.toDateString()];
   },
 
+  __getFirstWeekOfNextMonth() {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const firstWeek = [];
+    const firstDayMonth = nextMonth.getMonth();
+
+    for (let i = 0; i < 7 - (nextMonth.getDay() - 1); i++) {
+      const nextDate = new Date(nextMonth);
+      nextDate.setDate(nextMonth.getDate() + i);
+      firstWeek.push(nextDate.toDateString());
+
+      if (nextDate.getMonth() !== firstDayMonth) {
+        break;
+      }
+    }
+
+    return firstWeek;
+  },
+
   start() {
     this.sendSocketNotification("GET_EVENTS", {
       calendars: this.config.calendars,
@@ -45,8 +64,8 @@ Module.register("MMM-CalendarDisplay", {
   socketNotificationReceived(notification, payload) {
     if (notification === "EVENTS") {
       let [saturday, sunday] = this.__getWeekendDates();
-      this.events = payload.returnObj;
-      this.days = payload.days;
+      this.events = payload.toDisplay.events;
+      this.days = payload.toDisplay.days;
 
       this.today = new Date().toDateString();
       this.saturday = saturday;
@@ -54,10 +73,22 @@ Module.register("MMM-CalendarDisplay", {
 
       let calDisplayData = [];
 
-      Object.keys(payload.returnObj).forEach((day) => {
-        // calDisplayData[new Date(day).getTime()] = payload.returnObj[day].length;
-        calDisplayData.push({ day, events: payload.returnObj[day].length });
+      Object.keys(payload.monthOnly.events).forEach((day) => {
+        calDisplayData.push({
+          day,
+          events: payload.monthOnly.events[day].length
+        });
       });
+
+      this.__getFirstWeekOfNextMonth().forEach((day) => {
+        calDisplayData.push({
+          day,
+          events: 0,
+          nextMonth: true
+        });
+      });
+
+      console.log(calDisplayData);
 
       this.sendNotification("CAL-DISPLAY-EVENTS", {
         data: calDisplayData,
