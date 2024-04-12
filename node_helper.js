@@ -36,6 +36,19 @@ module.exports = NodeHelper.create({
     return [startDate, endDate];
   },
 
+  __GetFullMonthDates() {
+    const startDate = new Date();
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setMonth(startDate.getMonth() + 1);
+    endDate.setDate(0);
+    endDate.setHours(23, 59, 0, 0);
+
+    return [startDate, endDate];
+  },
+
   __MapEventData(eventData) {
     const adjustedEndDate = new Date(eventData.end);
     adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
@@ -171,10 +184,10 @@ module.exports = NodeHelper.create({
       };
     });
 
-    let returnObj = {};
+    let foundEvents = {};
 
     days.forEach((day) => {
-      returnObj[day.full] = [];
+      foundEvents[day.full] = [];
     });
 
     events.forEach((event) => {
@@ -191,19 +204,19 @@ module.exports = NodeHelper.create({
           ).map((date) => date.toDateString());
 
           between.forEach((date) => {
-            if (returnObj[date]) {
-              returnObj[date].push(event);
+            if (foundEvents[date]) {
+              foundEvents[date].push(event);
             }
           });
         } else {
-          if (returnObj[event.dateStart.date]) {
-            returnObj[event.dateStart.date].push(event);
+          if (foundEvents[event.dateStart.date]) {
+            foundEvents[event.dateStart.date].push(event);
           }
         }
       }
     });
 
-    return { returnObj, days };
+    return { foundEvents, days };
   },
 
   async socketNotificationReceived(notification, config) {
@@ -219,15 +232,25 @@ module.exports = NodeHelper.create({
 
       if (config.daysToDisplay > maxDays) config.daysToDisplay = maxDays;
 
-      let [startDate, endDate] = this.__GetWeekDates(maxDays);
-
-      let { returnObj, days } = await this.FormatEvents(
-        config.calendars,
-        startDate,
-        endDate
+      let [toDisplayStartDate, toDisplayEndDate] = this.__GetWeekDates(
+        config.daysToDisplay
       );
 
-      this.sendSocketNotification("EVENTS", { returnObj, days });
+      let [monthStartDate, monthEndDate] = this.__GetFullMonthDates();
+
+      let { foundEvents: weekEvents, days: weekDays } = await this.FormatEvents(
+        config.calendars,
+        toDisplayStartDate,
+        toDisplayEndDate
+      );
+
+      let { foundEvents: monthEvents, days: monthDays } =
+        await this.FormatEvents(config.calendars, monthStartDate, monthEndDate);
+
+      this.sendSocketNotification("EVENTS", {
+        toDisplay: { events: weekEvents, days: weekDays },
+        monthOnly: { events: monthEvents, days: monthDays }
+      });
     }
   }
 });
