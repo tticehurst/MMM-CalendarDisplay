@@ -23,21 +23,18 @@ Module.register("MMM-CalendarDisplay", {
 
     return [nextSaturday.toDateString(), nextSunday.toDateString()];
   },
-
   __getFirstWeekOfNextMonth() {
     const today = new Date();
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     const firstWeek = [];
-    const firstDayMonth = nextMonth.getMonth();
+    const firstDayMonth = nextMonth.getDay();
 
-    for (let i = 0; i < 7 - (nextMonth.getDay() - 1); i++) {
+    const daysInFirstWeek = 7 - (firstDayMonth === 0 ? 7 : firstDayMonth) + 1;
+
+    for (let i = 0; i < daysInFirstWeek; i++) {
       const nextDate = new Date(nextMonth);
       nextDate.setDate(nextMonth.getDate() + i);
       firstWeek.push(nextDate.toDateString());
-
-      if (nextDate.getMonth() !== firstDayMonth) {
-        break;
-      }
     }
 
     return firstWeek;
