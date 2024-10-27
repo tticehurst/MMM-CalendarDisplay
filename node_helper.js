@@ -2,7 +2,7 @@ const NodeHelper = require("node_helper");
 const bent = require("bent");
 const ICal = require("node-ical");
 const { rrulestr } = require("rrule");
-const rruleCache = {};
+// const rruleCache = {};
 
 function __FormatDate24HourTime(epochTimestamp) {
   return new Date(epochTimestamp).toLocaleTimeString([], {
@@ -115,12 +115,12 @@ module.exports = NodeHelper.create({
           const rrule = rrulestr(rruleString);
 
           const dates =
-            rruleCache[rrule] ||
+            // rruleCache[rrule] ||
             rrule.between(startDate, endDate, false, (date) => {
               return date >= startDate && date <= endDate;
             });
 
-          if (!rruleCache[rrule]) rruleCache[rrule] = dates;
+          // if (!rruleCache[rrule]) rruleCache[rrule] = dates;
 
           if (dates.length === 0) return null;
 
@@ -150,7 +150,7 @@ module.exports = NodeHelper.create({
       // console.log(recurringEvents);
     }
 
-    console.log("All events fetched");
+    // console.log("All events fetched");
     // allFilteredEvents.sort(
     //   (a, b) => a.name.charCodeAt(0) - b.name.charCodeAt(0)
     // );
