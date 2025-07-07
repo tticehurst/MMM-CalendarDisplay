@@ -92,7 +92,7 @@ module.exports = NodeHelper.create({
         const newArray = [];
 
         console.log(dateRange);
-        // !TODO - Loop through date range and manually add the reoccuring event to the object
+        // TODO - Loop through date range and manually add the reoccuring event to the array
         // ! For each entry in the filter duplicate it as many times as in the date range, setting start and end accordingly
         return newArray;
       });
@@ -100,7 +100,7 @@ module.exports = NodeHelper.create({
       console.log(VEVENTsRRULE);
     }
 
-    // !TODO - Remove this debug log once the module is stable
+    // TODO - Remove this debug log once the module is stable
     this.sendSocketNotification("debug", debugsend);
   },
 

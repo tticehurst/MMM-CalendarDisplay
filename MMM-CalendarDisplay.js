@@ -41,8 +41,13 @@ Module.register("MMM-CalendarDisplay", {
   start() {
     console.log("CAL LOADED - CLIENT SIDE");
 
-    if (!Array.isArray(this.config.calendars) || this.config.calendars.length <= 0) {
-      console.error("MMM-CalendarDisplay: No calendars configured. Please add at least one calendar to the config.");
+    if (
+      !Array.isArray(this.config.calendars) ||
+      this.config.calendars.length <= 0
+    ) {
+      console.error(
+        "MMM-CalendarDisplay: No calendars configured. Please add at least one calendar to the config."
+      );
       return;
     }
 
@@ -52,7 +57,9 @@ Module.register("MMM-CalendarDisplay", {
       // Checks to make sure there is a URL, then validates it. If either fail then raise an error
       if (!cal.url || !this.PRIVATE_isValidUrl(cal.url)) {
         // Raise an error
-        console.error(`MMM-CalendarDisplay: Invalid URL for calendar ${cal.name}: ${cal.url || "None"}`);
+        console.error(
+          `MMM-CalendarDisplay: Invalid URL for calendar ${cal.name}: ${cal.url || "None"}`
+        );
       }
     });
 
@@ -73,7 +80,7 @@ Module.register("MMM-CalendarDisplay", {
 
       this.updateDom();
     }
-    // !TODO - Listen for a notification from the server with a list of events, update the template accordingly
+    // TODO - Listen for a notification from the server with a list of events, update the template accordingly
   },
 
   // This returns the template file that will be used to render the module
