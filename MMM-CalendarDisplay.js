@@ -57,16 +57,22 @@ Module.register("MMM-CalendarDisplay", {
     });
 
     // Use the integrated "sendSocketNotification" function to send a notification to the server using calendars from the config as a payload
-    // Map the calendars object to an array of URLs
-    this.sendSocketNotification(
-      "GET_EVENTS",
-      this.config.calendars.map((cal) => cal.url)
-    );
+    // Map the urls object to an array of URLs
+    // Also send over the days to display so the server can perform validation
+    this.sendSocketNotification("GET_EVENTS", {
+      urls: this.config.calendars.map((cal) => cal.url),
+      daysToDisplay: this.config.daysToDisplay
+    });
   },
 
   // This function is called when the server sends a notification to the client
   // Contains the notification string and any data under the payload
   socketNotificationReceived(notification, payload) {
+    if (notification === "debug") {
+      this.debug = payload;
+
+      this.updateDom();
+    }
     // !TODO - Listen for a notification from the server with a list of events, update the template accordingly
   },
 
@@ -81,5 +87,9 @@ Module.register("MMM-CalendarDisplay", {
   },
 
   // This passes through any data to the template from 'this'
-  getTemplateData() {}
+  getTemplateData() {
+    return {
+      debug: this.debug
+    };
+  }
 });
