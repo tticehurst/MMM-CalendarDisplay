@@ -1,5 +1,16 @@
 // Client side
 
+/**
+ * MMM-CalendarDisplay
+ * A MagicMirror module that displays calendar events in a calendar format.
+ *
+ * Keywords:
+ *  PRIVATE : This is a private function and should not be used outside of this module.
+ *
+ * Author:
+ *  Tom Ticehurst
+ */
+
 Module.register("MMM-CalendarDisplay", {
   defaults: {
     // An array of calendar objects that will be used to style and grab ical information
@@ -14,17 +25,20 @@ Module.register("MMM-CalendarDisplay", {
 
   // Private function - check valid URL
   PRIVATE_isValidUrl(url) {
+    // Run a try-catch block to validate the URL
     try {
+      // Attempt to create a new URL object with the provided URL
       new URL(url);
+      // If the URL is valid, return true
       return true;
     } catch (e) {
+      // If an error is thrown, the URL is invalid, so return false
       return false;
     }
   },
 
   // Start function - This is run when the module loads on the client side
   start() {
-    // !TODO - Send off a socket notification to grab events on the server
     console.log("CAL LOADED - CLIENT SIDE");
 
     if (!Array.isArray(this.config.calendars) || this.config.calendars.length <= 0) {
