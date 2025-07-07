@@ -69,10 +69,11 @@ module.exports = NodeHelper.create({
       ICal.parseICS(response)
     );
 
+    const allEvents = [];
+
     // Loop through each ical and its raw data and filter out the events that are not of type 'VEVENT' or do not have a start and end date
     for (const data of iCalData) {
-      // Filter the data so it only contains actual calendar events
-
+      // Filter the data so it only contains actual calendar events between our start and end dates
       const VEVENTs = Object.values(data).filter(
         (eventData) =>
           eventData.type === "VEVENT" &&
@@ -80,28 +81,58 @@ module.exports = NodeHelper.create({
           eventData.start <= endDate
       );
 
+      // Filter out any non recurring events (aka any that do not have an rrule attribute)
       const VEVENTsNotRRULE = VEVENTs.filter((eventData) => !eventData.rrule);
 
       // Filter the events further to find those that reoccur using rrules
       // This will then be flatmapped to create a new array of events that fall within the date range given to the function
       const VEVENTsRRULE = VEVENTs.filter(
         (eventData) => eventData.rrule
+        // Flatmap so it doesn't return as a 2d array, we want a 1d array of objects like the origianl VEVENTs object
       ).flatMap((eventData) => {
+        // Turn the rule into a rrule object using the rrulestr function
         const rule = rrulestr(eventData.rrule.toString());
+        // Take the date range of the rule and map it to an array of UTC strings
+        // We use UTC so it can be converted to the system's local timezone later on and it makes it easier to work with
         const dateRange = rule.all().map((date) => date.toUTCString());
-        const newArray = [];
+        // New array to store the new VEVENTs that we will create based on the date range
+        const newVEVENTs = [];
 
-        console.log(dateRange);
-        // TODO - Loop through date range and manually add the reoccuring event to the array
-        // ! For each entry in the filter duplicate it as many times as in the date range, setting start and end accordingly
-        return newArray;
+        // Loop throgh each date
+        dateRange.forEach((date) => {
+          // Create a new deep clone of the event data to avoid touching the original
+          const newEventData = structuredClone(eventData);
+
+          // Create a new start date object
+          const newStartDate = new Date(date);
+          // Set the time to the same time as the original start date - we only want to touch the date not the actual time
+          newStartDate.setTime(newEventData.start.getTime());
+
+          // Create a new end date object
+          const newEndDate = new Date(date);
+          // Set the time to the same time as the original start date - we only want to touch the date not the actual time
+          newEndDate.setTime(newEventData.end.getTime());
+
+          // Overwrite the start and end dates of the new event data with the new start and end dates
+          newEventData.start = newStartDate;
+          newEventData.end = newEndDate;
+
+          // Push the new event data to the newVEVENTs array
+          newVEVENTs.push(newEventData);
+        });
+
+        // Return the newVEVENTs array so it can be used in the flatmap
+        return newVEVENTs;
       });
 
-      console.log(VEVENTsRRULE);
+      allEvents.push(...VEVENTsNotRRULE, ...VEVENTsRRULE);
     }
 
     // TODO - Remove this debug log once the module is stable
-    this.sendSocketNotification("debug", debugsend);
+    this.sendSocketNotification(
+      "debug",
+      allEvents.map((e) => e.summary)
+    );
   },
 
   // Listens for a socket notification from the client side
