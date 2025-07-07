@@ -252,6 +252,7 @@ module.exports = NodeHelper.create({
       );
 
       // Run a function to get the events for the current month
+      // TODO - Get this working with existing month overview module until I can rewrite it
       const thisMonthsEvents = await this.GetEventsBetweenDates(
         payload.calendars,
         monthStart,
