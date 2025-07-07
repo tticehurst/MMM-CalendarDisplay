@@ -37,6 +37,16 @@ Module.register("MMM-CalendarDisplay", {
     }
   },
 
+  // Private function to take Epoch timestamp and return it as a 24-hour time string
+  PRIVATE_FormatTimestampTo24Hour(timestamp) {
+    // Creates a new date object from the epoch timestamp and sets it to a locale timestring with no locale set - this will use the system locale
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+  },
+
   // Start function - This is run when the module loads on the client side
   start() {
     console.log("CAL LOADED - CLIENT SIDE");
@@ -63,11 +73,26 @@ Module.register("MMM-CalendarDisplay", {
       }
     });
 
+    this.nunjucksEnvironment().addFilter("formatTime24", (timestamp) => {
+      console.log("formatting", timestamp);
+      return this.PRIVATE_FormatTimestampTo24Hour(timestamp);
+    });
+
+    this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {
+      return this.events.filter(
+        (event) => new Date(event.start).toLocaleDateString() === day
+      );
+    });
+
+    this.nunjucksEnvironment().addFilter("getStylesForEvent", (event) => {
+      return this.config.calendars.find((cal) => cal.url == event.calUrl);
+    });
+
     // Use the integrated "sendSocketNotification" function to send a notification to the server using calendars from the config as a payload
     // Map the urls object to an array of URLs
     // Also send over the days to display so the server can perform validation
     this.sendSocketNotification("GET_EVENTS", {
-      urls: this.config.calendars.map((cal) => cal.url),
+      calendars: this.config.calendars,
       daysToDisplay: this.config.daysToDisplay
     });
   },
@@ -75,12 +100,22 @@ Module.register("MMM-CalendarDisplay", {
   // This function is called when the server sends a notification to the client
   // Contains the notification string and any data under the payload
   socketNotificationReceived(notification, payload) {
+    if (notification === "SEND_EVENTS_WEEK") {
+      this.nextSaturday = payload.weekend[0];
+      this.nextSunday = payload.weekend[1];
+      this.events = payload.events;
+      this.days = payload.days;
+
+      console.log(this.events);
+
+      this.updateDom();
+    }
+
     if (notification === "debug") {
       this.debug = payload;
 
       this.updateDom();
     }
-    // TODO - Listen for a notification from the server with a list of events, update the template accordingly
   },
 
   // This returns the template file that will be used to render the module
@@ -96,7 +131,13 @@ Module.register("MMM-CalendarDisplay", {
   // This passes through any data to the template from 'this'
   getTemplateData() {
     return {
-      debug: this.debug
+      nextSaturday: this.nextSaturday,
+      nextSunday: this.nextSunday,
+      events: this.events,
+      days: this.days,
+      toDisplay: this.config.daysToDisplay,
+      today: new Date().toLocaleDateString()
+      // debug: this.debug
     };
   }
 });

@@ -1,5 +1,3 @@
-{{ debug|dump }}
-
 <div id="cal-container">
   {% for day in days %}
     {% if loop.index <= toDisplay %}
@@ -8,9 +6,9 @@
 
         {% if day.full == today %}
           {% set headerID = "today" %}
-        {% elif day.full ==saturday %}
+        {% elif day.weekday == "Sat" %}
           {% set headerID = "saturday" %}
-        {% elif day.full ==sunday %}
+        {% elif day.weekday == "Sun" %}
           {% set headerID = "sunday" %}
         {% elif day.day == 1 %}
           {% set headerID = "newMonth" %}
@@ -30,8 +28,7 @@
         <div class="cal-slot-content">
           <ul>
             {% for evt in day.full|getEventsForDay %}
-
-              {% if evt.dateStart.time == "24:00" and evt.dateEnd.time == "24:00" %}
+              {% if evt.datetype == "date" %}
                 {% set allDay = true %}
               {% else %}
                 {% set allDay = false %}
@@ -42,9 +39,9 @@
 
                 <div class="cal-slot-event {{ 'time-based' if not allDay else '' }}">
                   {% if not allDay %}
-                    <span class="cal-slot-event-time">{{ evt.dateStart.time }} - {{ evt.dateEnd.time }}</span>
+                    <span class="cal-slot-event-time">{{ evt.start|formatTime24 }} - {{ evt.end|formatTime24 }}</span>
                   {% endif %}
-                  <span class="cal-slot-event-name">{{ evt.name }}</span>
+                  <span class="cal-slot-event-name">{{ evt.summary }}</span>
 
                   {% if evt.location %}<span class="cal-slot-event-location">{{ evt.location }}</span>{% endif %}
                 </div>
