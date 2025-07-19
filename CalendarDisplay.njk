@@ -43,7 +43,7 @@
                   {% endif %}
                   <span class="cal-slot-event-name">{{ evt.summary }}</span>
 
-                  {% if evt.location %}<span class="cal-slot-event-location">{{ evt.location }}</span>{% endif %}
+                  {% if evt.location and showAddress %}<span class="cal-slot-event-location">{{ evt.location }}</span>{% endif %}
                 </div>
               </li>
             {% endfor %}

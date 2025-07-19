@@ -136,8 +136,8 @@ Module.register("MMM-CalendarDisplay", {
       events: this.events,
       days: this.days,
       toDisplay: this.config.daysToDisplay,
-      today: new Date().toLocaleDateString()
-      // debug: this.debug
+      today: new Date().toLocaleDateString(),
+      showAddress: this.config.showAddress
     };
   }
 });
