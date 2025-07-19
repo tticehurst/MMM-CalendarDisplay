@@ -253,6 +253,7 @@ module.exports = NodeHelper.create({
       if (
         // If it's not valid just set to the days in the current month because that way it should be clear to the user and fuck it
         !payload.daysToDisplay ||
+        payload.daysToDisplay <= 0 ||
         payload.daysToDisplay > daysInCurrentMonth
       ) {
         payload.daysToDisplay = daysInCurrentMonth;
