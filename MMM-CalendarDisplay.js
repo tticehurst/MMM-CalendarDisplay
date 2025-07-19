@@ -74,14 +74,16 @@ Module.register("MMM-CalendarDisplay", {
     });
 
     this.nunjucksEnvironment().addFilter("formatTime24", (timestamp) => {
-      console.log("formatting", timestamp);
       return this.PRIVATE_FormatTimestampTo24Hour(timestamp);
     });
 
     this.nunjucksEnvironment().addFilter("getEventsForDay", (day) => {
-      return this.events.filter(
-        (event) => new Date(event.start).toLocaleDateString() === day
-      );
+      return this.events.filter((event) => {
+        return (
+          new Date(event.end).toLocaleDateString() === day ||
+          new Date(event.start).toLocaleDateString() === day
+        );
+      });
     });
 
     this.nunjucksEnvironment().addFilter("getStylesForEvent", (event) => {
@@ -105,8 +107,6 @@ Module.register("MMM-CalendarDisplay", {
       this.nextSunday = payload.weekend[1];
       this.events = payload.events;
       this.days = payload.days;
-
-      console.log(this.events);
 
       this.updateDom();
     }

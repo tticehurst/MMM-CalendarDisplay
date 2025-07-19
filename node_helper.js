@@ -87,6 +87,35 @@ module.exports = NodeHelper.create({
     console.log("CAL LOADED - SERVER SIDE");
   },
 
+  createEventsInDateRange(dateRange, eventData) {
+    const newVEVENTs = [];
+    dateRange.forEach((date) => {
+      // Create a new deep clone of the event data to avoid touching the original
+      const newEventData = structuredClone(eventData);
+
+      // Create a new start date object
+      const newStartDate = new Date(date);
+      // Set the time to the same time as the original start date - we only want to touch the date not the actual time
+      newStartDate.setHours(eventData.start.getHours());
+      newStartDate.setMinutes(eventData.start.getMinutes());
+
+      // Create a new end date object
+      const newEndDate = new Date(date);
+      // Set the time to the same time as the original start date - we only want to touch the date not the actual time
+      newEndDate.setHours(eventData.end.getHours());
+      newEndDate.setMinutes(eventData.end.getMinutes());
+
+      // Overwrite the start and end dates of the new event data with the new start and end dates
+      newEventData.start = newStartDate;
+      newEventData.end = newEndDate;
+
+      // Push the new event data to the newVEVENTs array
+      newVEVENTs.push(newEventData);
+    });
+
+    return newVEVENTs;
+  },
+
   // A public function to get the events between two dates and perform filtering based on predefined rules
   // I.E: It must be of type 'VEVENT' and have a start and end date
   async GetEventsBetweenDates(calendars, startDate, endDate) {
@@ -118,12 +147,7 @@ module.exports = NodeHelper.create({
     for (const data of iCalData) {
       // Filter the data so it only contains actual calendar events between our start and end dates
       const VEVENTs = Object.values(data)
-        .filter(
-          (eventData) =>
-            eventData.type === "VEVENT" &&
-            eventData.end >= startDate &&
-            eventData.start <= endDate
-        )
+        .filter((eventData) => eventData.type === "VEVENT")
         .map((eventData) => {
           // Map to the existing event data as well as our piece of custom style data
           // This will let it be attached to events for the client to interpret
@@ -131,7 +155,29 @@ module.exports = NodeHelper.create({
         });
 
       // Filter out any non recurring events (aka any that do not have an rrule attribute)
-      const VEVENTsNotRRULE = VEVENTs.filter((eventData) => !eventData.rrule);
+      const VEVENTsNotRRULE = VEVENTs.filter(
+        (eventData) =>
+          !eventData.rrule &&
+          eventData.end >= startDate &&
+          eventData.start <= endDate
+      ).flatMap((eventData) => {
+        // We flatmap this so that it returns a 1d array of events
+        if (
+          // We check if the event is all day and the end date is not the start date - This should indicate that it's a single event spanned over multiple days
+          eventData.end !== eventData.start
+        ) {
+          const dateRange = PRIVATE__GetFullDateRange(
+            eventData.start,
+            eventData.datetype === "date"
+              ? new Date(eventData.end).setDate(eventData.end.getDate() - 1)
+              : eventData.end
+          ).map((date) => new Date(date.setHours(0, 0, 0, 0)));
+
+          return this.createEventsInDateRange(dateRange, eventData);
+        }
+
+        return eventData;
+      });
 
       // Filter the events further to find those that reoccur using rrules
       // This will then be flatmapped to create a new array of events that fall within the date range given to the function
@@ -142,9 +188,11 @@ module.exports = NodeHelper.create({
         // Turn the rule into a rrule object using the rrulestr function
         const rrule = rrulestr(eventData.rrule.toString());
         // Take the date range of the rule and map it to an array of dates
-        let dateRange = rrule.all().map((date) => date.toDateString());
+        let dateRange = rrule
+          .between(startDate, endDate, true)
+          .map((date) => date.toDateString());
+
         // New array to store the new VEVENTs that we will create based on the date range
-        const newVEVENTs = [];
 
         // If an event has date exclusions process them here
         if (eventData.exdate) {
@@ -170,33 +218,8 @@ module.exports = NodeHelper.create({
           dateRange = dateRange.filter((d) => !excludeDates.has(d));
         }
 
-        // Loop throgh each date
-        dateRange.forEach((date) => {
-          // Create a new deep clone of the event data to avoid touching the original
-          const newEventData = structuredClone(eventData);
-
-          // Create a new start date object
-          const newStartDate = new Date(date);
-          // Set the time to the same time as the original start date - we only want to touch the date not the actual time
-          newStartDate.setHours(eventData.start.getHours());
-          newStartDate.setMinutes(eventData.start.getMinutes());
-
-          // Create a new end date object
-          const newEndDate = new Date(date);
-          // Set the time to the same time as the original start date - we only want to touch the date not the actual time
-          newEndDate.setHours(eventData.end.getHours());
-          newEndDate.setMinutes(eventData.end.getMinutes());
-
-          // Overwrite the start and end dates of the new event data with the new start and end dates
-          newEventData.start = newStartDate;
-          newEventData.end = newEndDate;
-
-          // Push the new event data to the newVEVENTs array
-          newVEVENTs.push(newEventData);
-        });
-
         // Return the newVEVENTs array so it can be used in the flatmap
-        return newVEVENTs;
+        return this.createEventsInDateRange(dateRange, eventData);
       });
 
       // Push both the events without an rrule and the ones with an rrule to the allEvents array, spreading so it's a 1d array
