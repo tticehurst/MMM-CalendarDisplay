@@ -294,20 +294,21 @@ module.exports = NodeHelper.create({
           (date) => {
             // Get the weekday, day and month from the date in the formats we want
             const [weekday, day, month] = date
-              .toLocaleDateString([], {
+              .toLocaleDateString(["en-GB"], {
                 weekday: "short",
                 month: "short",
                 day: "2-digit"
               })
               .split(" ");
-
             // Return this as well as the full day aka "02/07/2025" or "07/02/2025" depending on the locale
             // We set the hours to 00:00:00 because they're not important and we dont want the date to change depending on locale if they are too close to the other border
             return {
               weekday,
               day,
               month,
-              full: new Date(date.setHours(0, 0, 0, 0)).toLocaleDateString()
+              full: new Date(date.setHours(0, 0, 0, 0)).toLocaleDateString(
+                "en-GB"
+              )
             };
           }
         )
