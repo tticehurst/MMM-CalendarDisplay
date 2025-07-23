@@ -97,6 +97,14 @@ Module.register("MMM-CalendarDisplay", {
       calendars: this.config.calendars,
       daysToDisplay: this.config.daysToDisplay
     });
+
+    // Set an interval to refresh the events every X minutes depending what the user sets in config
+    setInterval(() => {
+      this.sendSocketNotification("GET_EVENTS", {
+        calendars: this.config.calendars,
+        daysToDisplay: this.config.daysToDisplay
+      });
+    }, this.config.refreshTime);
   },
 
   // This function is called when the server sends a notification to the client
