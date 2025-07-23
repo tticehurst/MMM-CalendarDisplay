@@ -97,6 +97,21 @@ Module.register("MMM-CalendarDisplay", {
       calendars: this.config.calendars,
       daysToDisplay: this.config.daysToDisplay
     });
+
+    // Check if the refreshTime is a number and greater than 0
+    // If not, default to 600000 (10 minutes)
+    const refreshTime =
+      typeof this.config.refreshTime === "number" && this.config.refreshTime > 0
+        ? this.config.refreshTime
+        : 600000;
+
+    // Set an interval to refresh the events every X minutes depending what the user sets in config
+    setInterval(() => {
+      this.sendSocketNotification("GET_EVENTS", {
+        calendars: this.config.calendars,
+        daysToDisplay: this.config.daysToDisplay
+      });
+    }, refreshTime);
   },
 
   // This function is called when the server sends a notification to the client
