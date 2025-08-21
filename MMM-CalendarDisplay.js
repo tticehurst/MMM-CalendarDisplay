@@ -125,12 +125,6 @@ Module.register("MMM-CalendarDisplay", {
 
       this.updateDom();
     }
-
-    if (notification === "debug") {
-      this.debug = payload;
-
-      this.updateDom();
-    }
   },
 
   // This returns the template file that will be used to render the module
