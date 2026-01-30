@@ -1,4 +1,20 @@
+{% macro event(styles,start,end,summary,location,allDay) %}
+ <li class="{{ styles }}">
+                    <div class="cal-slot-fa"></div>
+
+                    <div class="cal-slot-event {{ 'time-based' if not allDay else '' }}">
+                      {% if not allDay %}
+                        <span class="cal-slot-event-time">{{ start|formatTime24 }} - {{ end|formatTime24 }}</span>
+                      {% endif %}
+                      <span class="cal-slot-event-name">{{ summary }}</span>
+
+                      {% if location and showAddress %}<span class="cal-slot-event-location">{{ location }}</span>{% endif %}
+                    </div>
+                  </li>
+{% endmacro %}
+
 <div id="cal-container">
+  {% set counter = 0 %}
   {% for day in days %}
     {% if loop.index <= toDisplay %}
       <div class="cal-slot">
@@ -27,25 +43,28 @@
 
         <div class="cal-slot-content">
           <ul>
+            {% set currentDay = day.full %}
+            {% set counter = 0 %}
+
             {% for evt in day.full|getEventsForDay %}
+              {% set summary = evt.summary %}
+              {% if currentDay == day.full %}
+                {% set counter = counter + 1 %}
+              {% else %}
+                {% set counter = 0 %}
+              {% endif %}
+
               {% if evt.datetype == "date" %}
                 {% set allDay = true %}
               {% else %}
                 {% set allDay = false %}
               {% endif %}
 
-              <li class="{{ evt.styles }}">
-                <div class="cal-slot-fa"></div>
-
-                <div class="cal-slot-event {{ 'time-based' if not allDay else '' }}">
-                  {% if not allDay %}
-                    <span class="cal-slot-event-time">{{ evt.start|formatTime24 }} - {{ evt.end|formatTime24 }}</span>
-                  {% endif %}
-                  <span class="cal-slot-event-name">{{ evt.summary }}</span>
-
-                  {% if evt.location and showAddress %}<span class="cal-slot-event-location">{{ evt.location }}</span>{% endif %}
-                </div>
-              </li>
+              {% if counter <= 5 %}
+                {{ event(evt.styles,evt.start,evt.end,evt.summary,evt.location,allDay) }}
+              {% elseif counter == 6 %}
+                {{ event("bg-black text-gold",evt.start,evt.end,"More events not shown...","",true) }}
+              {% endif %}
             {% endfor %}
           </ul>
         </div>
