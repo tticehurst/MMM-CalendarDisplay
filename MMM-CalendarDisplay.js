@@ -125,6 +125,12 @@ Module.register("MMM-CalendarDisplay", {
 
       this.updateDom();
     }
+
+    if (notification === "SEND_EVENTS_MONTH") {
+      this.events = payload.events;
+
+      this.sendNotification("CAL-DISPLAY-EVENTS", this.events);
+    }
   },
 
   // This returns the template file that will be used to render the module
